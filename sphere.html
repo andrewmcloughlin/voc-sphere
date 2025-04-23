@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sphere of Cards</title>
+<style>
+    body {
+      perspective: 800px; /* Creates the 3D scene for the whole body */
+      overflow: hidden; /* Hide elements that go outside the body */
+      background-color: rgb(65, 65, 65); /* Light grey background */
+      display: flex; /* Use flexbox for centering */
+      justify-content: center; /* Center horizontally */
+      align-items: center; /* Center vertically */
+      min-height: 100vh; /* Ensure full viewport height */
+      margin: 0; /* Remove default body margins */
+    }
+
+    .rotation-container {
+        width: 500px;
+        height: 500px;
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform-style: preserve-3d;
+        transform-origin: center;
+        }
+    
+    .sphere-container {
+        width: 500px;
+        height: 500px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-style: preserve-3d;
+        transform: translate(-20%, -20%);
+        }
+
+    
+    .card {
+      width: 100px;  /* Card width */
+      height: 60px; /* Card height */
+      position: absolute; /* Allows for 3D positioning */
+      background-color: white; /* White cards */
+      border: 1px solid #ccc;
+      display: flex; /* For centering content */
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d; /* Important for child elements of cards if any */
+      user-select: none; /* Prevents text selection */
+      -webkit-user-select: none; /* For Safari */
+      -moz-user-select: none; /* For Firefox */
+      -ms-user-select: none; /* For Internet Explorer/Edge */
+    }
+            
+    /* Optional: Style the card content */
+    .card span {
+      padding: 5px;
+      color: #333; /* Darker text color */
+    }
+    </style>
+</head>
+<body>
+    <div class="rotation-container">
+        <div class="sphere-container">
+        </div>
+    </div>
+
+<script>
+const sphereContainer = document.querySelector('.sphere-container');
+const numCards = 50;
+const radius = 370; // Radius of the sphere
+const numLatitudes = 19; // Number of latitude circles
+
+let currentImageIndex = 1; // Start from the first image
+
+function distributeCards(numCards, latitude) {
+  const cards = [];
+  const circumference = 2 * Math.PI * radius * Math.cos(latitude);
+  const cardsInCircle = Math.max(1, Math.round(circumference / 100));
+
+  for (let i = 0; i < cardsInCircle; i++) {
+    const card = document.createElement('div');
+    card.classList.add('card');
+
+    // Assign images in order and repeat if we run out
+    const imagePath = `./vocs/Card-${currentImageIndex}.svg`;
+    card.innerHTML = `<img src="${imagePath}" alt="Image ${currentImageIndex}" width="100" height="60">`;
+
+    currentImageIndex++;
+    if (currentImageIndex > 95) currentImageIndex = 1; // Reset to the first image if we exceed 95
+
+    const longitude = (i / cardsInCircle) * 2 * Math.PI;
+
+    // 3D Position using spherical coordinates
+    const x = radius * Math.cos(latitude) * Math.cos(longitude);
+    const y = radius * Math.sin(latitude);
+    const z = radius * Math.cos(latitude) * Math.sin(longitude);
+
+    // Correctly orient the card to face outward
+    const theta = Math.atan2(x, z); // Rotation around the Y-axis
+    const phi = -Math.asin(y / radius); // Tilt to match latitude
+
+    card.style.transform = `
+      translate3d(${x}px, ${y}px, ${z}px)
+      rotateY(${theta}rad)
+      rotateX(${phi}rad)
+    `;
+
+    cards.push(card);
+  }
+  return cards;
+}
+
+// Distribute cards across latitudes
+for (let j = 0; j < numLatitudes; j++) {
+  const latitude = (-Math.PI / 2) + (j / (numLatitudes - 1)) * Math.PI; // Distribute from -PI/2 to +PI/2
+  const cards = distributeCards(numCards, latitude);
+  cards.forEach(card => sphereContainer.appendChild(card));
+}
+
+const rotationContainer = document.querySelector('.rotation-container');
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let rotationX = 0;
+let rotationY = 0;
+let autoRotateY = 0;
+let isInteracting = false;
+
+// Handle mouse dragging
+rotationContainer.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  isInteracting = true; // Stop auto-rotation while dragging
+});
+
+rotationContainer.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    rotationY += deltaX * 0.2;
+    rotationX -= deltaY * 0.2;
+
+    rotationContainer.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+
+    startX = e.clientX;
+    startY = e.clientY;
+  }
+});
+
+rotationContainer.addEventListener('mouseup', () => {
+  isDragging = false;
+  setTimeout(() => { isInteracting = false }, 2000); // Resume auto-spin after 2s
+});
+
+rotationContainer.addEventListener('mouseleave', () => {
+  isDragging = false;
+  setTimeout(() => { isInteracting = false }, 2000);
+});
+
+// Auto-rotation function
+function autoRotate() {
+  if (!isInteracting) {
+    autoRotateY += 0.2; // Adjust speed
+    rotationContainer.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY + autoRotateY}deg)`;
+  }
+  requestAnimationFrame(autoRotate);
+}
+
+// Start animation
+autoRotate();
+
+</script>
+
+</body>
+</html>
+</script>
+
+</body>
+</html>
